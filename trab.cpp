@@ -8,7 +8,7 @@
 
 #define TAMANHO_LINHA_ARQ	89
 #define SUBSTR_CHAVE		0, 7
-#define SUBSTR_NOME			7, 45
+#define SUBSTR_NOME		7, 45
 #define SUBSTR_AUTOR		52, 30
 #define SUBSTR_CODIGO		82, 7
 
