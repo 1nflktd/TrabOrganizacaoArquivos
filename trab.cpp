@@ -8,7 +8,7 @@
 
 #define TAMANHO_LINHA_ARQ	89
 #define SUBSTR_CHAVE		0, 7
-#define SUBSTR_NOME		7, 45
+#define SUBSTR_NOME			7, 45
 #define SUBSTR_AUTOR		52, 30
 #define SUBSTR_CODIGO		82, 7
 
@@ -116,11 +116,13 @@ std::vector<livro> consultar(std::multiset<indice<T>, compara<T>> indiceConsulta
 		return vetorResultado;
 	}
 
-	for(auto & i : indiceConsulta)
+	auto i = indiceConsulta.find(valor);
+	if(i != indiceConsulta.end())
 	{
-		if (i.campo == valor)
+		while((*i).campo == valor)
 		{
-			linhas.seekg(i.linha * TAMANHO_LINHA_ARQ);
+			//std::cout << (*i).campo << "\n";
+			linhas.seekg((*i).linha * TAMANHO_LINHA_ARQ);
 			std::string linhaArq;
 			if (getline(linhas, linhaArq))
 			{
@@ -129,10 +131,12 @@ std::vector<livro> consultar(std::multiset<indice<T>, compara<T>> indiceConsulta
 		            trim(linhaArq.substr(SUBSTR_NOME)),
 		            trim(linhaArq.substr(SUBSTR_AUTOR)),
 		            std::atoi(linhaArq.substr(SUBSTR_CODIGO).c_str()),
-		            i.linha
+		            (*i).linha
 		        );
 		        vetorResultado.push_back(l);
 			}
+
+			++i;
 		}
 	}
 
