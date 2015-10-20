@@ -106,7 +106,7 @@ bool carregarIndices(
 }
 
 template <typename T>
-std::vector<livro> consultar(std::multiset<indice<T>, compara<T>> indiceConsulta, T valor)
+std::vector<livro> consultar(const std::multiset<indice<T>, compara<T>> & indiceConsulta, T valor)
 {
 	std::vector<livro> vetorResultado;
 
@@ -156,7 +156,7 @@ void showMenu()
 	std::cout << "|----------------------------------|\n";
 }
 
-void showResultados(std::vector<livro> resultados)
+void showResultados(const std::vector<livro> & resultados)
 {
 	std::cout << "Resultados da consulta:\n";
 	for (auto & r : resultados)
