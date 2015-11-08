@@ -34,7 +34,7 @@ public:
 template <typename T>
 struct compara
 {
-    bool operator() (const indice<T> & lhs, const indice<T> &rhs) { return lhs.campo < rhs.campo; }
+    bool operator() (const indice<T> & lhs, const indice<T> &rhs) const { return lhs.campo < rhs.campo; }
 };
 
 struct livro
