@@ -173,25 +173,17 @@ int main()
 					}
 					else
 					{
-						std::cout << "something\n";
-						/*
-						bsoncxx::stdx::string_view t1 = bsoncxx::to_json(ele2.get_value());
-						bsoncxx::document::value value (reinterpret_cast<const uint8_t*>(t1.data()), t1.size(), bson_free_deleter);
-						bsoncxx::document::view view = value.view();
-						std::cout << bsoncxx::to_json(view["text"]) << "\n";
-						*/
-						
-						bsoncxx::stdx::string_view t1 = "{\"metadata\" : {\"iso_language_code\" : \"pt\",\"result_type\" : \"recent\" }, \"text\" : \"xxxãâøððæßð/?€/?€©«©»©“““““““““ßßððđ\" }";
-						bsoncxx::stdx::optional<bsoncxx::document::value> o11 = bsoncxx::from_json(t1);
+						bsoncxx::types::b_document x = ele2.get_document();
+						bsoncxx::document::view y = x.value;
 
-						//bsoncxx::stdx::optional<bsoncxx::document::value> o11 = bsoncxx::from_json(bsoncxx::to_json(ele2.get_value()));
-						if(o11)
-						{
-							bsoncxx::document::value o21 = o11.value();
-							bsoncxx::document::view o31 = o21.view();
-							std::cout << bsoncxx::to_json(o31["text"]) << "\n";
-						}
-						//std::cout << bsoncxx::to_json(ele2.get_value()) << "\n";
+						std::cout << "text\n";
+						std::cout << bsoncxx::to_json(y["text"]) << "\n";
+
+						bsoncxx::document::element usr = y["user"];
+						bsoncxx::types::b_document usrx = usr.get_document();
+						bsoncxx::document::view usrxx = usrx.value;
+						std::cout << "user\n";
+						std::cout << bsoncxx::to_json(usrxx["name"]) << "\n";
 					}
 		        }
 		        break;
