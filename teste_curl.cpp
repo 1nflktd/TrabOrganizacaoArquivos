@@ -3,6 +3,7 @@
 #include <string>
 #include <curl/curl.h>
 
+#include <bsoncxx/builder/stream/document.hpp>
 #include <bsoncxx/array/view.hpp>
 #include <bsoncxx/array/view.hpp>
 #include <bsoncxx/builder/basic/array.hpp>
@@ -135,88 +136,34 @@ int main()
 		bsoncxx::document::view o3 = o2.view();
 		for (bsoncxx::document::element ele : o3)
 		{
-		    // element is non owning view of a key-value pair within a document.
+			if(ele.type() == bsoncxx::type::k_array)
+			{
+			    bsoncxx::array::view subarr{ele.get_array().value};
+				
+				auto docFinal = bsoncxx::builder::stream::document{}
+					<< "tweets" << bsoncxx::builder::stream::open_array;
 
-		    // we can use the key() method to get a string_view of the key.
-		    bsoncxx::stdx::string_view field_key{ele.key()};
+			    for (bsoncxx::array::element ele2 : subarr)
+				{
+					bsoncxx::types::b_document x = ele2.get_document();
+					bsoncxx::document::view y = x.value;
+					bsoncxx::document::element usr = y["user"];
+					bsoncxx::types::b_document usrx = usr.get_document();
+					bsoncxx::document::view usrxx = usrx.value;
 
-		    std::cout << "Got key, key = " << field_key << std::endl;
+					auto docTxtUsr = bsoncxx::builder::stream::document{}
+						<< "text" << y["text"].get_value() 
+						<< "user" << usrxx["name"].get_value()
+					<< bsoncxx::builder::stream::finalize;
 
-		    // we can use type() to get the type of the value.
-		    switch (ele.type()) {
-		    case bsoncxx::type::k_utf8:
-		        std::cout << "Got String!" << std::endl;
-		        break;
-		    case bsoncxx::type::k_oid:
-		        std::cout << "Got ObjectId!" << std::endl;
-		        break;
-		    case bsoncxx::type::k_array: {
-		        std::cout << "Got Array!" << std::endl;
-		        // if we have a subarray, we can access it by getting a view of it.
-		        bsoncxx::array::view subarr{ele.get_array().value};
-
-		        for (bsoncxx::array::element ele2 : subarr) {
-					if(ele2.type() == bsoncxx::type::k_array)
-					{
-						bsoncxx::array::view tset = ele2.get_array().value;
-						for(auto ele3 : tset)
-						{
-							//bsoncxx::document::view ttt = ele3.get_value();
-							//std::cout << "Text\n" << ele3.get_value()["text"] << "\n";
-							std::cout << "ELE3\n" << bsoncxx::to_json(ele3.get_value()) << "\n";
-						}
-				        //std::cout << "array element: " << bsoncxx::to_json(ele2.get_value()) << std::endl;
-					}
-					else if (ele2.type() == bsoncxx::type::k_utf8)
-					{
-						std::cout << "Ele2\n" << bsoncxx::to_json(ele2.get_value()) << "\n";
-					}
-					else
-					{
-						bsoncxx::types::b_document x = ele2.get_document();
-						bsoncxx::document::view y = x.value;
-
-						std::cout << "text\n";
-						std::cout << bsoncxx::to_json(y["text"]) << "\n";
-
-						bsoncxx::document::element usr = y["user"];
-						bsoncxx::types::b_document usrx = usr.get_document();
-						bsoncxx::document::view usrxx = usrx.value;
-						std::cout << "user\n";
-						std::cout << bsoncxx::to_json(usrxx["name"]) << "\n";
-					}
-		        }
-		        break;
-		    }
-		    default:
-		        std::cout << "We messed up!" << std::endl;
-	  	  }
-
-		    // usually we don't need to actually use a switch statement, because we can also
-		    // get a variant 'value' that can hold any BSON type.
-		    //bsoncxx::types::value ele_val{ele.get_value()};
-		    // if we need to print an arbitrary value, we can use to_json, which provides
-		    // a suitable overload.
-		    //std::cout << "the value is " << bsoncxx::to_json(ele_val) << std::endl;;
-
-
+					std::cout << "docTxtUsr : " << bsoncxx::to_json(docTxtUsr) << "\n";
+					//docFinal << bsoncxx::to_json(docTxtUsr);
+			    }
+				
+				//docFinal << bsoncxx::builder::stream::close_array << bsoncxx::builder::stream::finalize;
+			}	 
 		}
-		//auto statuses = o3["statuses"].get_array().view()[0]["text"];
-
-		//std::cout << bsoncxx::to_json() << "\n";
-		/*
-		auto arr = statuses.get_array();
-		for (auto && doc : arr)
-		{
-			std::cout << bsoncxx::to_json(doc) << "\n";
-		}
-		*/
-
-		//std::cout << ret.body << "\n";
-
 	}
-
-
 
 	// linha compilacao
 	// g++ teste_curl.cpp -o teste_curl -std=c++11 `pkg-config --cflags --libs libmongocxx` -lcurl
