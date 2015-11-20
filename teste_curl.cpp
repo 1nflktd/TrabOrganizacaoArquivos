@@ -4,6 +4,7 @@
 #include <curl/curl.h>
 
 #include <bsoncxx/builder/stream/document.hpp>
+#include <bsoncxx/builder/stream/array.hpp>
 #include <bsoncxx/array/view.hpp>
 #include <bsoncxx/array/view.hpp>
 #include <bsoncxx/builder/basic/array.hpp>
@@ -140,8 +141,7 @@ int main()
 			{
 			    bsoncxx::array::view subarr{ele.get_array().value};
 				
-				auto docFinal = bsoncxx::builder::stream::document{}
-					<< "tweets" << bsoncxx::builder::stream::open_array;
+				auto arr = bsoncxx::builder::stream::array{};
 
 			    for (bsoncxx::array::element ele2 : subarr)
 				{
@@ -156,12 +156,17 @@ int main()
 						<< "user" << usrxx["name"].get_value()
 					<< bsoncxx::builder::stream::finalize;
 
-					std::cout << "docTxtUsr : " << bsoncxx::to_json(docTxtUsr) << "\n";
-					//docFinal << bsoncxx::to_json(docTxtUsr);
+					arr << bsoncxx::types::b_document{docTxtUsr};
 			    }
-				
-				//docFinal << bsoncxx::builder::stream::close_array << bsoncxx::builder::stream::finalize;
-			}	 
+
+				auto docFinal = bsoncxx::builder::stream::document{}
+						 << "tweets"
+  						 << bsoncxx::builder::stream::open_array
+						 << bsoncxx::types::b_array{arr}
+						 << bsoncxx::builder::stream::close_array
+						 << bsoncxx::builder::stream::finalize;
+				std::cout << bsoncxx::to_json(docFinal) << "\n";
+			}
 		}
 	}
 
