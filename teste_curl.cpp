@@ -1,6 +1,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <experimental/optional>
 #include <curl/curl.h>
 
 #include <bsoncxx/builder/stream/document.hpp>
@@ -86,10 +87,9 @@ size_t header_callback(void *data, size_t size, size_t nmemb,
 	return (size * nmemb);
 }
 
-int main()
+
+std::experimental::optional<bsoncxx::document::value> obterTweets (std::string consulta) 
 {
-	// pegar bearer token
-	// https://api.twitter.com/oauth2/token
 	CURL * curl = NULL;
 	CURLcode res;
 
@@ -99,8 +99,13 @@ int main()
 	if(curl)
 	{
 		struct curl_slist *chunk = NULL;
+		
+		char * url_codificada = curl_easy_escape(curl, consulta.c_str(), consulta.length());
+		std::string url_codificada_str {url_codificada};
+		std::string url {"https://api.twitter.com/1.1/search/tweets.json?q="};
+		url += url_codificada_str;
 
-		curl_easy_setopt(curl, CURLOPT_URL, "https://api.twitter.com/1.1/search/tweets.json?q=dostoievski+karamazov+irmaos");
+		curl_easy_setopt(curl, CURLOPT_URL, url.c_str()); // "https://api.twitter.com/1.1/search/tweets.json?q=dostoievski+karamazov+irmaos");
 
 		chunk = curl_slist_append(chunk, "Authorization:Bearer AAAAAAAAAAAAAAAAAAAAALSuigAAAAAAigtciMNxS%2FFHBu3aLnYRwKHc4X8%3DRSJi7DonxsBWdZSHBCmGm16PFepLzI0KynRs6grFWzURi1Xs1B");
 
@@ -121,7 +126,7 @@ int main()
 			ret.body = "Failed to query.";
 			ret.code = -1;
 			//return ret;
-			return -1;
+			return std::experimental::nullopt;
 		}
 
 		long http_code = 0;
@@ -165,12 +170,24 @@ int main()
 						 << bsoncxx::types::b_array{arr}
 						 << bsoncxx::builder::stream::close_array
 						 << bsoncxx::builder::stream::finalize;
-				std::cout << bsoncxx::to_json(docFinal) << "\n";
+				//std::cout << bsoncxx::to_json(docFinal) << "\n";
+				return docFinal;
 			}
 		}
 	}
+	return std::experimental::nullopt;
+}
 
+
+int main()
+{
+	auto doc = obterTweets(std::string{"liverpool"});
+	if (doc)
+	{
+		std::cout << bsoncxx::to_json(doc.value());
+	}
+	
 	// linha compilacao
-	// g++ teste_curl.cpp -o teste_curl -std=c++11 `pkg-config --cflags --libs libmongocxx` -lcurl
+	// g++ teste_curl.cpp -o teste_curl -std=c++14 `pkg-config --cflags --libs libmongocxx` -lcurl
 	return 0;
 }
