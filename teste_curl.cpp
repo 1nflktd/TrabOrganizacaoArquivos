@@ -87,7 +87,6 @@ size_t header_callback(void *data, size_t size, size_t nmemb,
 	return (size * nmemb);
 }
 
-
 std::experimental::optional<bsoncxx::document::value> obterTweets (std::string consulta) 
 {
 	CURL * curl = NULL;
@@ -112,11 +111,8 @@ std::experimental::optional<bsoncxx::document::value> obterTweets (std::string c
 		res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
 
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
-		/** set data object to pass to callback function */
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &ret);
-		/** set the header callback function */
 		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
-		/** callback object for headers */
 		curl_easy_setopt(curl, CURLOPT_HEADERDATA, &ret);
 
 		res = curl_easy_perform(curl);
@@ -137,7 +133,7 @@ std::experimental::optional<bsoncxx::document::value> obterTweets (std::string c
 	    curl_global_cleanup();
 
 		bsoncxx::stdx::optional<bsoncxx::document::value> o1 = bsoncxx::from_json(ret.body);
-		//auto o2 = o1.value();
+
 		bsoncxx::document::value o2 = o1.value();
 		bsoncxx::document::view o3 = o2.view();
 		for (bsoncxx::document::element ele : o3)
@@ -147,10 +143,13 @@ std::experimental::optional<bsoncxx::document::value> obterTweets (std::string c
 			    bsoncxx::array::view subarr{ele.get_array().value};
 				
 				auto arr = bsoncxx::builder::stream::array{};
-
+				
 			    for (bsoncxx::array::element ele2 : subarr)
 				{
+					if (!ele2) break;
+
 					bsoncxx::types::b_document x = ele2.get_document();
+										
 					bsoncxx::document::view y = x.value;
 					bsoncxx::document::element usr = y["user"];
 					bsoncxx::types::b_document usrx = usr.get_document();
@@ -163,7 +162,6 @@ std::experimental::optional<bsoncxx::document::value> obterTweets (std::string c
 
 					arr << bsoncxx::types::b_document{docTxtUsr};
 			    }
-
 				auto docFinal = bsoncxx::builder::stream::document{}
 						 << "tweets"
   						 << bsoncxx::builder::stream::open_array
@@ -178,16 +176,15 @@ std::experimental::optional<bsoncxx::document::value> obterTweets (std::string c
 	return std::experimental::nullopt;
 }
 
-
 int main()
 {
-	auto doc = obterTweets(std::string{"liverpool"});
+	auto doc = obterTweets(std::string{"Practical spirituality"});
 	if (doc)
 	{
 		std::cout << bsoncxx::to_json(doc.value());
 	}
 	
 	// linha compilacao
-	// g++ teste_curl.cpp -o teste_curl -std=c++14 `pkg-config --cflags --libs libmongocxx` -lcurl
+	// g++ teste_curl.cpp -o teste_curl -std=c++11 `pkg-config --cflags --libs libmongocxx` -lcurl
 	return 0;
 }
