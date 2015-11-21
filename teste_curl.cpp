@@ -7,7 +7,6 @@
 #include <bsoncxx/builder/stream/document.hpp>
 #include <bsoncxx/builder/stream/array.hpp>
 #include <bsoncxx/array/view.hpp>
-#include <bsoncxx/array/view.hpp>
 #include <bsoncxx/builder/basic/array.hpp>
 #include <bsoncxx/builder/basic/document.hpp>
 #include <bsoncxx/builder/basic/kvp.hpp>
@@ -87,7 +86,7 @@ size_t header_callback(void *data, size_t size, size_t nmemb,
 	return (size * nmemb);
 }
 
-std::experimental::optional<bsoncxx::document::value> obterTweets (std::string consulta) 
+std::experimental::optional<bsoncxx::array::value> obterTweets (std::string consulta) 
 {
 	CURL * curl = NULL;
 	CURLcode res;
@@ -162,13 +161,9 @@ std::experimental::optional<bsoncxx::document::value> obterTweets (std::string c
 
 					arr << bsoncxx::types::b_document{docTxtUsr};
 			    }
-				auto docFinal = bsoncxx::builder::stream::document{}
-						 << "tweets"
-  						 << bsoncxx::builder::stream::open_array
+				auto docFinal = bsoncxx::builder::stream::array{}
 						 << bsoncxx::types::b_array{arr}
-						 << bsoncxx::builder::stream::close_array
 						 << bsoncxx::builder::stream::finalize;
-				//std::cout << bsoncxx::to_json(docFinal) << "\n";
 				return docFinal;
 			}
 		}
@@ -178,13 +173,18 @@ std::experimental::optional<bsoncxx::document::value> obterTweets (std::string c
 
 int main()
 {
-	auto doc = obterTweets(std::string{"Practical spirituality"});
+	auto doc = obterTweets(std::string{"liverpool"});
 	if (doc)
 	{
-		std::cout << bsoncxx::to_json(doc.value());
+		auto docX = bsoncxx::builder::stream::document{}
+			<< "eu" << "çaça"
+			<< "tweets" 
+			<< bsoncxx::types::b_array{doc.value()}
+		<< bsoncxx::builder::stream::finalize;
+		std::cout << bsoncxx::to_json(docX);
 	}
 	
 	// linha compilacao
-	// g++ teste_curl.cpp -o teste_curl -std=c++11 `pkg-config --cflags --libs libmongocxx` -lcurl
+	// g++ teste_curl.cpp -o teste_curl -std=c++14 `pkg-config --cflags --libs libmongocxx` -lcurl
 	return 0;
 }
