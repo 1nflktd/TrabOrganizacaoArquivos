@@ -97,16 +97,14 @@ size_t header_callback(void *data, size_t size, size_t nmemb,
 
 /******************************************/
 
-
-using bsoncxx::builder::stream::document;
-using bsoncxx::builder::stream::finalize;
-
 enum CAMPO_ARQ
 {
     CHAVE = 1,
 	NOME,
 	AUTOR,
-	CODIGO
+	CODIGO,
+	USER,
+	TEXT
 };
 
 std::experimental::optional<bsoncxx::array::value> obterTweets (std::string consulta) 
@@ -228,25 +226,24 @@ bool inserirLivrosBD(const mongocxx::v0::database & db)
 			auto tweets = obterTweets(nome_livro);
 			if (tweets)
 			{
-				auto livro_doc = document{}
+				auto livro_doc = bsoncxx::builder::stream::document{}
 					<< "chave" << std::atoi(linha.substr(SUBSTR_CHAVE).c_str())
 					<< "nome" << nome_livro
 					<< "autor" << trim(linha.substr(SUBSTR_AUTOR))
 					<< "codigo" << std::atoi(linha.substr(SUBSTR_CODIGO).c_str())
 					<< "tweets" << bsoncxx::types::b_array{tweets.value()}
-					<< finalize;
+					<< bsoncxx::builder::stream::finalize;
 				auto res = db["livros"].insert_one(livro_doc);
 			}
 			else
 			{
-				std::cout << "entrou em baixo\n";
-				auto livro_doc = document{}
+				auto livro_doc = bsoncxx::builder::stream::document{}
 					<< "chave" << std::atoi(linha.substr(SUBSTR_CHAVE).c_str())
 					<< "nome" << nome_livro
 					<< "autor" << trim(linha.substr(SUBSTR_AUTOR))
 					<< "codigo" << std::atoi(linha.substr(SUBSTR_CODIGO).c_str())
 					<< "tweets" << bsoncxx::builder::stream::open_array << bsoncxx::builder::stream::close_array
-					<< finalize;
+					<< bsoncxx::builder::stream::finalize;
 				auto res = db["livros"].insert_one(livro_doc);
 			}
 		}
@@ -259,8 +256,18 @@ bool inserirLivrosBD(const mongocxx::v0::database & db)
 template <typename T>
 void consultar(const mongocxx::v0::database & db, std::string campo, T valor)
 {
-	document filter;
-	filter << campo << valor;
+	bsoncxx::builder::stream::document filter;
+
+	if (campo == "user" || campo == "text")
+	{
+		std::string consulta {"tweets.0."};
+		consulta += campo;
+		filter << consulta << valor;
+	}
+	else
+	{
+		filter << campo << valor;
+	}
 	
 	auto cursor = db["livros"].find(filter);
 	bool achou = false;
@@ -313,7 +320,7 @@ int main()
 		{
 			if (!livrosCarregados)
 			{
-				livrosCarregados = inserirLivrosBD(std::move(db));
+				//livrosCarregados = inserirLivrosBD(std::move(db));
 			}
 
 	        int valorInt;
@@ -340,6 +347,16 @@ int main()
 					std::getline(std::cin, valorStr);
 					valorStr = trim(valorStr);
 	                consultar<std::string>(std::move(db), "autor", valorStr);
+					break;
+				case USER:
+					std::getline(std::cin, valorStr);
+					valorStr = trim(valorStr);
+	                consultar<std::string>(std::move(db), "user", valorStr);
+					break;
+				case TEXT:
+					std::getline(std::cin, valorStr);
+					valorStr = trim(valorStr);
+	                consultar<std::string>(std::move(db), "text", valorStr);
 					break;
 				default:
 					std::cout << "Digite um valor entre 0 e 4!\n";
