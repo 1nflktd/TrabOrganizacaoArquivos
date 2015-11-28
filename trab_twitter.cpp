@@ -221,49 +221,62 @@ bool inserirLivrosBD(const mongocxx::v0::database & db)
 	while (getline(linhas, linha))
 	{
 		std::string nome_livro{trim(linha.substr(SUBSTR_NOME))};
+
+		auto livro_doc = bsoncxx::builder::stream::document{}
+			<< "chave" << std::atoi(linha.substr(SUBSTR_CHAVE).c_str())
+			<< "nome" << nome_livro
+			<< "autor" << trim(linha.substr(SUBSTR_AUTOR))
+			<< "codigo" << std::atoi(linha.substr(SUBSTR_CODIGO).c_str())
+			<< "carregouTweets" << false
+			<< bsoncxx::builder::stream::finalize;
+
+		//std::cout << "Carregou " << bsoncxx::to_json(livro_doc) << "\n";
+
+		auto res = db["livros"].insert_one(livro_doc);
+
+	}
+
+	return true;
+}
+
+bool carregarTweets(const mongocxx::v0::database & db)
+{
+	bsoncxx::builder::stream::document filter;
+	
+	filter << "carregouTweets" << false;
+
+	auto cursor = db["livros"].find(filter);
+
+	for (bsoncxx::document::view docview : cursor)
+	{
 		bool twitter_ok = true;
-		
 		do
 		{
 			try
 			{
+				std::string nome_livro {docview["nome"].get_utf8().value};
 				auto tweets = obterTweets(nome_livro);
 				if (tweets)
 				{
-					auto livro_doc = bsoncxx::builder::stream::document{}
-						<< "chave" << std::atoi(linha.substr(SUBSTR_CHAVE).c_str())
-						<< "nome" << nome_livro
-						<< "autor" << trim(linha.substr(SUBSTR_AUTOR))
-						<< "codigo" << std::atoi(linha.substr(SUBSTR_CODIGO).c_str())
-						<< "tweets" << bsoncxx::types::b_array{tweets.value()}
-						<< bsoncxx::builder::stream::finalize;
-
-					std::cout << "Carregou " << bsoncxx::to_json(livro_doc) << "\n";
-
-					auto res = db["livros"].insert_one(livro_doc);
+					bsoncxx::builder::stream::document filterUpdate;
+					filterUpdate << "chave" << docview["chave"].get_value();
+					bsoncxx::builder::stream::document update;
+					update << "$set" << bsoncxx::builder::stream::open_document
+							<< "tweets" << bsoncxx::types::b_array{tweets.value()}
+							<< "carregouTweets" << true
+							<< bsoncxx::builder::stream::close_document;
+					auto res = db["livros"].update_one(filterUpdate, update);
 					twitter_ok = true;
 				}
-				/*else
-				{
-					auto livro_doc = bsoncxx::builder::stream::document{}
-						<< "chave" << std::atoi(linha.substr(SUBSTR_CHAVE).c_str())
-						<< "nome" << nome_livro
-						<< "autor" << trim(linha.substr(SUBSTR_AUTOR))
-						<< "codigo" << std::atoi(linha.substr(SUBSTR_CODIGO).c_str())
-						<< "tweets" << bsoncxx::builder::stream::open_array << bsoncxx::builder::stream::close_array
-						<< bsoncxx::builder::stream::finalize;
-					auto res = db["livros"].insert_one(livro_doc);
-				}*/
 			}
 			catch (const std::runtime_error& e)
 			{
-				//std::cout << e.what() << "\n";
+				////std::cout << e.what() << "\n";
 				std::cout << "twitter bloqueado\n";
 				twitter_ok = false;
 			}
 		}
 		while(!twitter_ok);
-		
 	}
 
 	return true;
@@ -307,8 +320,8 @@ void showMenu()
 	std::cout << "| 2 - Nome do livro                |\n";
 	std::cout << "| 3 - Autor                        |\n";
 	std::cout << "| 4 - Codigo                       |\n";
-	std::cout << "| 5 - Tweet                        |\n";
-	std::cout << "| 6 - Usuário                      |\n";
+	std::cout << "| 5 - Usuário                      |\n";
+	std::cout << "| 6 - Tweet                        |\n";
 	std::cout << "|----------------------------------|\n";
 	std::cout << "| 0 - Sair                         |\n";
 	std::cout << "|----------------------------------|\n";
@@ -322,6 +335,7 @@ int main()
 	auto db = conn["organizacao"];
 
 	bool livrosCarregados = false;
+	bool tweetsCarregados = false;
 	int inputUsuario;
 	do 
 	{
@@ -338,7 +352,12 @@ int main()
 		{
 			if (!livrosCarregados)
 			{
-				livrosCarregados = inserirLivrosBD(std::move(db));
+				//livrosCarregados = inserirLivrosBD(std::move(db));
+				
+			}
+			if(!tweetsCarregados)
+			{
+				tweetsCarregados = carregarTweets(std::move(db));
 			}
 
 	        int valorInt;
