@@ -275,6 +275,12 @@ bool carregarTweets(const mongocxx::v0::database & db)
 				std::cout << "twitter bloqueado\n";
 				twitter_ok = false;
 			}
+			catch (const std::exception & e)
+			{
+				std::cout << "exception query\n";
+				std::cout << e.what() << "\n";
+				twitter_ok = false;
+			}
 		}
 		while(!twitter_ok);
 	}
@@ -291,7 +297,11 @@ void consultar(const mongocxx::v0::database & db, std::string campo, T valor)
 	{
 		std::string consulta {"tweets.0."};
 		consulta += campo;
-		filter << consulta << valor;
+		if(campo == "user")
+			filter << consulta << valor;
+		else 
+			filter << consulta << bsoncxx::builder::stream::open_document << "$regex" << valor << bsoncxx::builder::stream::close_document;
+		
 	}
 	else
 	{
@@ -323,6 +333,9 @@ void showMenu()
 	std::cout << "| 5 - Usuário                      |\n";
 	std::cout << "| 6 - Tweet                        |\n";
 	std::cout << "|----------------------------------|\n";
+	std::cout << "| 7 - Carregar livros              |\n";
+	std::cout << "| 8 - Carregar tweets              |\n";
+	std::cout << "|----------------------------------|\n";
 	std::cout << "| 0 - Sair                         |\n";
 	std::cout << "|----------------------------------|\n";
 }
@@ -334,8 +347,6 @@ int main()
 	
 	auto db = conn["organizacao"];
 
-	bool livrosCarregados = false;
-	bool tweetsCarregados = false;
 	int inputUsuario;
 	do 
 	{
@@ -350,55 +361,61 @@ int main()
 
 		if (inputUsuario != 0) 
 		{
-			if (!livrosCarregados)
+			if (inputUsuario == 7 || inputUsuario == 8)
 			{
-				//livrosCarregados = inserirLivrosBD(std::move(db));
-				
+				if(inputUsuario == 7)
+				{
+					if(!inserirLivrosBD(std::move(db)))
+						std::cout << "Erro ao carregar os livros\n";
+				}
+				else
+				{
+					if(!carregarTweets(std::move(db)))
+						std::cout << "Erro ao carregar os tweets\n";
+				}
 			}
-			if(!tweetsCarregados)
+			else
 			{
-				tweetsCarregados = carregarTweets(std::move(db));
-			}
 
-	        int valorInt;
-	        std::string valorStr;
+		        int valorInt;
+		        std::string valorStr;
+			    std::cout << "Digite sua consulta: ";
 
-	        std::cout << "Digite sua consulta: ";
-
-			switch(inputUsuario)
-			{
-				case CODIGO:
-					std::cin >> valorInt;
-					consultar<int>(std::move(db), "codigo", valorInt);
-					break;
-	    		case CHAVE:
-					std::cin >> valorInt;
-	                consultar<int>(std::move(db), "chave", valorInt);
-	                break;
-				case NOME:
-					std::getline(std::cin, valorStr);
-					valorStr = trim(valorStr);
-					consultar<std::string>(std::move(db), "nome", valorStr);
-	                break;
-				case AUTOR:
-					std::getline(std::cin, valorStr);
-					valorStr = trim(valorStr);
-	                consultar<std::string>(std::move(db), "autor", valorStr);
-					break;
-				case USER:
-					std::getline(std::cin, valorStr);
-					valorStr = trim(valorStr);
-	                consultar<std::string>(std::move(db), "user", valorStr);
-					break;
-				case TEXT:
-					std::getline(std::cin, valorStr);
-					valorStr = trim(valorStr);
-	                consultar<std::string>(std::move(db), "text", valorStr);
-					break;
-				default:
-					std::cout << "Digite um valor entre 0 e 6!\n";
-					inputUsuario = 9;
-					break;
+				switch(inputUsuario)
+				{
+					case CODIGO:
+						std::cin >> valorInt;
+						consultar<int>(std::move(db), "codigo", valorInt);
+						break;
+					case CHAVE:
+						std::cin >> valorInt;
+			            consultar<int>(std::move(db), "chave", valorInt);
+			            break;
+					case NOME:
+						std::getline(std::cin, valorStr);
+						valorStr = trim(valorStr);
+						consultar<std::string>(std::move(db), "nome", valorStr);
+			            break;
+					case AUTOR:
+						std::getline(std::cin, valorStr);
+						valorStr = trim(valorStr);
+			            consultar<std::string>(std::move(db), "autor", valorStr);
+						break;
+					case USER:
+						std::getline(std::cin, valorStr);
+						valorStr = trim(valorStr);
+			            consultar<std::string>(std::move(db), "user", valorStr);
+						break;
+					case TEXT:
+						std::getline(std::cin, valorStr);
+						valorStr = trim(valorStr);
+			            consultar<std::string>(std::move(db), "text", valorStr);
+						break;
+					default:
+						std::cout << "Digite um valor entre 0 e 6!\n";
+						inputUsuario = 9;
+						break;
+				}
 			}
 		}
 	} 
